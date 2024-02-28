@@ -6,19 +6,11 @@ import sys
 import os
 import numpy as np
 
-import pipelines.processMeerKAT.processATA as processATA
 import config_parser
 
 from casatasks import *
 from casatools import msmetadata,table,measures,quanta
 
-logger = processATA.logger
-
-# Get access to the msmd module
-msmd = msmetadata()
-tb = table()
-me = measures()
-qa = quanta()
 
 def get_fields(MS):
 
@@ -170,68 +162,14 @@ def check_refant(MS,refant,config,warn=True):
         ants = msmd.antennaids()
 
     if refant not in ants:
-        err = "Reference antenna '{0}' isn't present in input dataset '{1}'. Antennas present are: {2}. Try 'm052' or 'm005' if present, or ensure 'calcrefant=True' and 'calc_refant.py' script present in '{3}'.".format(refant,MS,ants,config)
+        err = "Reference antenna '{0}' isn't present in input dataset '{1}'. Antennas present are: {2}. Try "'5e'" if present, or check observation directories.".format(refant,MS,ants,config)
         if warn:
             logger.warning(err)
         else:
             raise ValueError(err)
     else:
         logger.info("Using reference antenna '{0}'.".format(refant))
-        if refant == 'm059':
-            logger.info("This is usually a well-behaved (stable) antenna. Edit '{0}' to change this, by updating 'refant' in [crosscal] section.".format(config))
-            logger.debug("Alternatively, set 'calcrefant=True' in [crosscal] section of '{0}', and include 'calc_refant.py' in 'scripts' in [slurm] section.".format(config)) #(included by default)
 
-def check_scans(MS,nodes,tasks,dopol):
-
-    """Check if the user has set the number of threads to a number larger than the number of scans.
-    If so, display a warning and return the number of thread to be replaced in their config file.
-
-    Arguments:
-    ----------
-    MS : str
-        Input MeasurementSet (relative or absolute path).
-    nodes : int
-        The number of nodes set by the user.
-    tasks : int
-        The number of tasks (per node) set by the user.
-    dopol : bool
-        Do polarisation calibration?
-
-    Returns:
-    --------
-    threads : dict
-        A dictionary with updated values for nodes and tasks per node to match the number of scans."""
-
-    nscans = msmd.nscans()
-    limit = int(nscans/2)
-
-    if abs(nodes * tasks - limit) > 0.1*limit:
-        logger.warning('The number of threads ({0} node(s) x {1} task(s) = {2}) is not ideal compared to the number of scans ({3}) for "{4}".'.format(nodes,tasks,nodes*tasks,nscans,MS))
-
-        #Start with 8/16 tasks on one node, and increase count of nodes (and then tasks per node) until limit reached
-        nodes = 1
-        tasks = 16 if not dopol else 8
-
-        if tasks > limit:
-            tasks = limit
-
-        while nodes * tasks < limit:
-            if nodes < processATA.TOTAL_NODES_LIMIT:
-                nodes += 1
-            elif tasks < processATA.NTASKS_PER_NODE_LIMIT:
-                tasks += 1
-            else:
-                break
-
-        logger.warning('Config file has been updated to use {0} node(s) and {1} task(s) per node.'.format(nodes,tasks))
-        if nodes*tasks != limit:
-            logger.info('For the best results, update your config file so that nodes x tasks per node = {0}.'.format(limit))
-
-    if nodes > 4:
-        logger.warning("Large allocation of {0} nodes found. Please consider setting 'createmms=False' in config file, if using large number of SPWs.".format(nodes))
-
-    threads = {'nodes' : nodes, 'ntasks_per_node' : tasks}
-    return threads
 
 def check_spw(config,msmd):
 
@@ -384,8 +322,8 @@ def get_xy_field(visname, fields):
 
 def main():
 
-    args = processATA.parse_args()
-    processATA.setup_logger(args.config,args.verbose)
+    args = config_parser.parse_config()
+    logger = 
     msmd.open(args.MS)
 
     dopol = args.dopol
@@ -407,13 +345,7 @@ def main():
         dopol = False
 
     check_refant(args.MS, refant, args.config, warn=True)
-    threads = check_scans(args.MS,args.nodes,args.ntasks_per_node,dopol)
     SPW = check_spw(args.config,msmd)
-
-    config_parser.overwrite_config(args.config, conf_dict={'dopol' : dopol}, conf_sec='run', sec_comment='# Internal variables for pipeline execution')
-    config_parser.overwrite_config(args.config, conf_dict=threads, conf_sec='slurm')
-    config_parser.overwrite_config(args.config, conf_dict=fields, conf_sec='fields')
-    config_parser.overwrite_config(args.config, conf_dict={'spw' : "'{0}'".format(SPW)}, conf_sec='crosscal')
 
     msmd.done()
 

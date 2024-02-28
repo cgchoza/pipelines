@@ -26,6 +26,8 @@ import argparse
 import os
 import sys
 import re
+os.chdir('/home/cchoza/pipelines/processMeerKAT/')
+sys.path.append('/home/cchoza/pipelines/processMeerKAT/')
 import config_parser
 import bookkeeping
 from shutil import copyfile
@@ -36,6 +38,11 @@ from datetime import datetime
 logging.Formatter.converter = gmtime
 logger = logging.getLogger(__name__)
 logging.basicConfig(format="%(asctime)-15s %(levelname)s: %(message)s")
+
+print(__name__)
+
+from casatasks import *
+from casatools import msmetadata,table,measures,quanta
 
 # #Set global limits for current ilifu cluster configuration
 # TOTAL_NODES_LIMIT = 79
@@ -235,10 +242,20 @@ def setup_logger(config,verbose=False):
 def main():
     # We're turning this into a run-engine instead
 
-    #Parse command-line arguments, and setup logger
-    args = parse_args()
+    print(sys.getcwd())
 
-    taskvals,config = config_parser.parse_config(args)
+    # Get config file
+    args = parse_args()
+    taskvals,config = config_parser.parse_config(args.config)
+
+    print(taskvals, config)
+
+    #Parse command-line arguments, and setup logger
+    
+    msmd = msmetadata()
+    tb = table()
+    me = measures()
+    qa = quanta()
 
     #Mutually exclusive arguments - display version, build config file or run pipeline
     if args.version:
@@ -246,7 +263,6 @@ def main():
     if args.license:
         logger.info(license)
     
-
 
 if __name__ == "__main__":
     main()
