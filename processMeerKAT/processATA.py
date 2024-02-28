@@ -26,7 +26,7 @@ import argparse
 import os
 import sys
 import re
-import config_parser  # Circular import??
+import config_parser
 import bookkeeping
 from shutil import copyfile
 from copy import deepcopy
@@ -53,7 +53,6 @@ AUX_SCRIPTS_DIR = 'aux_scripts'
 SELFCAL_SCRIPTS_DIR = 'selfcal_scripts'
 CONFIG = 'default_config.txt'
 TMP_CONFIG = '.config.tmp'
-# MASTER_SCRIPT = 'submit_pipeline.sh'
 SPW_PREFIX = '*:'
 
 #Set global values for field, crosscal and SLURM arguments copied to config file, and some of their default values
@@ -61,10 +60,7 @@ FIELDS_CONFIG_KEYS = ['fluxfield','bpassfield','phasecalfield','targetfields','e
 CROSSCAL_CONFIG_KEYS = ['minbaselines','chanbin','width','timeavg','createmms','keepmms','spw','nspw','calcrefant','refant','standard','badants','badfreqranges']
 SELFCAL_CONFIG_KEYS = ['nloops','loop','cell','robust','imsize','wprojplanes','niter','threshold','uvrange','nterms','gridder','deconvolver','solint','calmode','discard_nloops','gaintype','outlier_threshold','flag','outlier_radius']
 IMAGING_CONFIG_KEYS = ['cell', 'robust', 'imsize', 'wprojplanes', 'niter', 'threshold', 'multiscale', 'nterms', 'gridder', 'deconvolver', 'restoringbeam', 'stokes', 'mask', 'rmsmap','outlierfile', 'pbthreshold', 'pbband']
-# SLURM_CONFIG_STR_KEYS = ['container','mpi_wrapper','partition','time','name','dependencies','exclude','account','reservation']
-# SLURM_CONFIG_KEYS = ['nodes','ntasks_per_node','mem','plane','submit','precal_scripts','postcal_scripts','scripts','verbose','modules'] + SLURM_CONFIG_STR_KEYS
-# CONTAINER = '/idia/software/containers/casa-6.5.0-modular.sif'
-# MPI_WRAPPER = 'mpirun'
+
 RUN_CONFIG_KEYS = ['verbose', 'scripts']
 PRECAL_SCRIPTS = [('calc_refant.py',False,''),('partition.py',True,'')] #Scripts run before calibration at top level directory when nspw > 1
 POSTCAL_SCRIPTS = [('concat.py',False,''),('plotcal_spw.py', False, ''),('selfcal_part1.py',True,''),('selfcal_part2.py',False,''),('science_image.py', True, '')] #Scripts run after calibration at top level directory when nspw > 1
@@ -150,6 +146,33 @@ def check_bash_path(fname):
 
     return fname
 
+def parse_args():
+
+    """Parse arguments into this script.
+    Only config file: all other fields set from within config file.
+
+    Returns:
+    --------
+    args : class ``argparse.ArgumentParser``
+        Known and validated arguments."""
+
+    parser = argparse.ArgumentParser(prog=THIS_PROG,description='Process MeerKAT data via CASA MeasurementSet. Version: {0}'.format(__version__))
+
+    parser.add_argument("-C","--config",metavar="path", default=CONFIG, required=False, type=str, help="Relative (not absolute) path to config file.")
+
+    args, unknown = parser.parse_known_args()
+
+    if len(unknown) > 0:
+        parser.error('Unknown input argument(s) present - {0}'.format(unknown))
+
+    if args.run:
+        if args.config is None:
+            parser.error("You must input a config file [--config] to run the pipeline.")
+        if not os.path.exists(args.config):
+            parser.error("Input config file '{0}' not found. Please set [-C --config].".format(args.config))
+
+    return args
+
 
 def get_config_kwargs(config,section,expected_keys):
 
@@ -210,11 +233,12 @@ def setup_logger(config,verbose=False):
     logger.setLevel(loglevel)
 
 def main():
-
     # We're turning this into a run-engine instead
 
     #Parse command-line arguments, and setup logger
     args = parse_args()
+
+    taskvals,config = config_parser.parse_config(args)
 
     #Mutually exclusive arguments - display version, build config file or run pipeline
     if args.version:

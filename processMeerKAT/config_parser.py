@@ -80,33 +80,6 @@ def overwrite_config(filename, conf_dict={}, conf_sec='', sec_comment=''):
     config.write(config_file)
     config_file.close()
 
-def parse_spw(filename):
-
-    config_dict,config = parse_config(filename)
-    spw = config_dict['crosscal']['spw']
-    nspw = config_dict['crosscal']['nspw']
-
-    if ',' in spw:
-        SPWs = spw.split(',')
-        low,high,unit,dirs = [0]*len(SPWs),[0]*len(SPWs),['']*len(SPWs),['']*len(SPWs)
-        for i,SPW in enumerate(SPWs):
-            low[i],high[i],unit[i],func = processATA.get_spw_bounds(SPW)
-            dirs[i] = '{0}~{1}{2}'.format(low[i],high[i],unit[i])
-
-        lowest = min(low)
-        highest = max(high)
-
-        # Uncomment to simply use e.g. '*MHz'
-        # if all([i == unit[0] for i in unit]):
-        #     unit = unit[0]
-        #     dirs = '*{0}'.format(unit)
-
-    else:
-        low,high,unit,func = processATA.get_spw_bounds(spw)
-        dirs = []
-
-    return low,high,unit,dirs
-
 def validate_args(kwdict, section, key, dtype, default=None):
     """
     Validate the dictionary created by parse_config. Make sure
@@ -159,8 +132,3 @@ def validate_args(kwdict, section, key, dtype, default=None):
         raise NotImplementedError('Only str, int, bool, and float are valid types.')
 
     return val
-
-if __name__ == '__main__':
-    cliargs = parse_args()
-    taskvals,config = parse_config(cliargs.config)
-    print(taskvals)
