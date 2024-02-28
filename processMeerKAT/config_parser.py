@@ -6,19 +6,6 @@
 import argparse
 import configparser
 import ast
-import pipelines.processMeerKAT.processATA as processATA
-
-def parse_args():
-    """
-    Parse the command line arguments
-    """
-    parser = argparse.ArgumentParser()
-    parser.add_argument('-C','--config', default=processATA.CONFIG, required=False, help='Name of the input config file')
-
-    args, __ = parser.parse_known_args()
-
-    return vars(args)
-
 
 def parse_config(filename):
     """
