@@ -1,5 +1,5 @@
 [data]
-vis = ''
+vis = 'standard_polcal_set_5.1GHz.ms'
 
 [fields]
 bpassfield = ''
@@ -8,7 +8,8 @@ phasecalfield = ''
 targetfields = ''
 extrafields = ''
 
-[slurm]                           # See processMeerKAT.py -h for documentation
+[run]                           # See processMeerKAT.py -h for documentation
+dopol = True
 nodes = 1
 ntasks_per_node = 8
 plane = 1
@@ -95,7 +96,3 @@ pbband = 'LBand'                  # Which band to use to generate the PB - one o
 mask = ''
 rmsmap = ''
 outlierfile = ''
-
-[run]                             # Internal variables for pipeline execution
-continue = True
-dopol = False

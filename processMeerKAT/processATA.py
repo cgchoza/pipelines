@@ -1,6 +1,10 @@
 #!/usr/bin/env python3
 
 # Removing all SLURM arguments from this script! Will explore other necessary scripts and remove SLURM as needed
+# It might be better to turn this into a CASA recipe that execfiles('name', globals()) all the other relevant scripts
+# Look into this if it isn't budging in half an hour
+
+
 __version__ = 'ATA0.0'
 
 license = """
@@ -26,9 +30,9 @@ import argparse
 import os
 import sys
 import re
-os.chdir('/home/cchoza/pipelines/processMeerKAT/')
 sys.path.append('/home/cchoza/pipelines/processMeerKAT/')
 import config_parser
+import read_ms
 import bookkeeping
 from shutil import copyfile
 from copy import deepcopy
@@ -38,8 +42,6 @@ from datetime import datetime
 logging.Formatter.converter = gmtime
 logger = logging.getLogger(__name__)
 logging.basicConfig(format="%(asctime)-15s %(levelname)s: %(message)s")
-
-print(__name__)
 
 from casatasks import *
 from casatools import msmetadata,table,measures,quanta
@@ -84,74 +86,74 @@ SCRIPTS = [ ('validate_input.py',False,''),
             ('quick_tclean.py',True,'')]
 
 
-def check_path(path,update=False):
+# def check_path(path,update=False):
 
-    """Check in specific location for a script or container, including in bash path, and in this pipeline's calibration
-    scripts directory (SCRIPT_DIR/{CALIB_SCRIPTS_DIR,AUX_SCRIPTS_DIR}/). If path isn't found, raise IOError, otherwise return the path.
+#     """Check in specific location for a script or container, including in bash path, and in this pipeline's calibration
+#     scripts directory (SCRIPT_DIR/{CALIB_SCRIPTS_DIR,AUX_SCRIPTS_DIR}/). If path isn't found, raise IOError, otherwise return the path.
 
-    Arguments:
-    ----------
-    path : str
-        Check for script or container at this path.
-    update : bool, optional
-        Update the path according to where the file is found.
+#     Arguments:
+#     ----------
+#     path : str
+#         Check for script or container at this path.
+#     update : bool, optional
+#         Update the path according to where the file is found.
 
-    Returns:
-    --------
-    path : str
-        Path to script or container (if path found and update=True)."""
+#     Returns:
+#     --------
+#     path : str
+#         Path to script or container (if path found and update=True)."""
 
-    newpath = path
+#     newpath = path
 
-    #Attempt to find path firstly in CWD, then directory up, then pipeline directories, then bash path.
-    if os.path.exists(path) and path[0] != '/':
-        newpath = '{0}/{1}'.format(os.getcwd(),path)
-    if not os.path.exists(path) and path != '':
-        if os.path.exists('../{0}'.format(path)):
-            newpath = '../{0}'.format(path)
-        elif os.path.exists('{0}/{1}'.format(SCRIPT_DIR,path)):
-            newpath = '{0}/{1}'.format(SCRIPT_DIR,path)
-        elif os.path.exists('{0}/{1}/{2}'.format(SCRIPT_DIR,CALIB_SCRIPTS_DIR,path)):
-            newpath = '{0}/{1}/{2}'.format(SCRIPT_DIR,CALIB_SCRIPTS_DIR,path)
-        elif os.path.exists('{0}/{1}/{2}'.format(SCRIPT_DIR,AUX_SCRIPTS_DIR,path)):
-            newpath = '{0}/{1}/{2}'.format(SCRIPT_DIR,AUX_SCRIPTS_DIR,path)
-        elif os.path.exists('{0}/{1}/{2}'.format(SCRIPT_DIR,SELFCAL_SCRIPTS_DIR,path)):
-            newpath = '{0}/{1}/{2}'.format(SCRIPT_DIR,SELFCAL_SCRIPTS_DIR,path)
-        elif os.path.exists(check_bash_path(path)):
-            newpath = check_bash_path(path)
-        else:
-            #If it still doesn't exist, throw error
-            raise IOError('File "{0}" not found.'.format(path))
+#     #Attempt to find path firstly in CWD, then directory up, then pipeline directories, then bash path.
+#     if os.path.exists(path) and path[0] != '/':
+#         newpath = '{0}/{1}'.format(os.getcwd(),path)
+#     if not os.path.exists(path) and path != '':
+#         if os.path.exists('../{0}'.format(path)):
+#             newpath = '../{0}'.format(path)
+#         elif os.path.exists('{0}/{1}'.format(SCRIPT_DIR,path)):
+#             newpath = '{0}/{1}'.format(SCRIPT_DIR,path)
+#         elif os.path.exists('{0}/{1}/{2}'.format(SCRIPT_DIR,CALIB_SCRIPTS_DIR,path)):
+#             newpath = '{0}/{1}/{2}'.format(SCRIPT_DIR,CALIB_SCRIPTS_DIR,path)
+#         elif os.path.exists('{0}/{1}/{2}'.format(SCRIPT_DIR,AUX_SCRIPTS_DIR,path)):
+#             newpath = '{0}/{1}/{2}'.format(SCRIPT_DIR,AUX_SCRIPTS_DIR,path)
+#         elif os.path.exists('{0}/{1}/{2}'.format(SCRIPT_DIR,SELFCAL_SCRIPTS_DIR,path)):
+#             newpath = '{0}/{1}/{2}'.format(SCRIPT_DIR,SELFCAL_SCRIPTS_DIR,path)
+#         elif os.path.exists(check_bash_path(path)):
+#             newpath = check_bash_path(path)
+#         else:
+#             #If it still doesn't exist, throw error
+#             raise IOError('File "{0}" not found.'.format(path))
 
-    if update:
-        return newpath
-    else:
-        return path
+#     if update:
+#         return newpath
+#     else:
+#         return path
 
-def check_bash_path(fname):
+# def check_bash_path(fname):
 
-    """Check if file is in your bash path and executable (i.e. executable from command line), and prepend path to it if so.
+#     """Check if file is in your bash path and executable (i.e. executable from command line), and prepend path to it if so.
 
-    Arguments:
-    ----------
-    fname : str
-        Filename to check.
+#     Arguments:
+#     ----------
+#     fname : str
+#         Filename to check.
 
-    Returns:
-    --------
-    fname : str
-        Potentially updated filename with absolute path prepended."""
+#     Returns:
+#     --------
+#     fname : str
+#         Potentially updated filename with absolute path prepended."""
 
-    PATH = os.environ['PATH'].split(':')
-    for path in PATH:
-        if os.path.exists('{0}/{1}'.format(path,fname)):
-            if not os.access('{0}/{1}'.format(path,fname), os.X_OK):
-                raise IOError('"{0}" found in "{1}" but file is not executable.'.format(fname,path))
-            else:
-                fname = '{0}/{1}'.format(path,fname)
-            break
+#     PATH = os.environ['PATH'].split(':')
+#     for path in PATH:
+#         if os.path.exists('{0}/{1}'.format(path,fname)):
+#             if not os.access('{0}/{1}'.format(path,fname), os.X_OK):
+#                 raise IOError('"{0}" found in "{1}" but file is not executable.'.format(fname,path))
+#             else:
+#                 fname = '{0}/{1}'.format(path,fname)
+#             break
 
-    return fname
+#     return fname
 
 def parse_args():
 
@@ -242,27 +244,58 @@ def setup_logger(config,verbose=False):
 def main():
     # We're turning this into a run-engine instead
 
-    print(sys.getcwd())
-
-    # Get config file
-    args = parse_args()
-    taskvals,config = config_parser.parse_config(args.config)
+    sys.path.pop()
+    ############ GET CONFIG FILE #############
+    # Could turn into execfile('set_config.py', globals()) then execfile('config_parser.py', globals())
+    config = f'/home/cchoza/pipelines/processMeerKAT/default_config.txt'
+    taskvals,config = config_parser.parse_config(filename=config)
 
     print(taskvals, config)
 
-    #Parse command-line arguments, and setup logger
-    
+    ######## READ IN MS ########
     msmd = msmetadata()
     tb = table()
     me = measures()
     qa = quanta()
 
-    #Mutually exclusive arguments - display version, build config file or run pipeline
-    if args.version:
-        logger.info('This is version {0}'.format(__version__))
-    if args.license:
-        logger.info(license)
-    
+    obs_vis = config['data']['vis'].strip("'")
+    msmd.open(msfile=obs_vis)
 
-if __name__ == "__main__":
-    main()
+    dopol = config['run']['dopol']
+    refant = config['crosscal']['refant']
+    fields = read_ms.get_fields(msmd, obs_vis)
+    logger.info('[fields] section written to "{0}". Edit this section if you need to change field IDs (comma-seperated string for multiple IDs, not supported for calibrators).'.format(config))
+
+    npol = msmd.ncorrforpol()[0]
+    parang = 0
+    if 'phasecalfield' in fields:
+        calfield = msmd.fieldsforname(fields['phasecalfield'][1:-1])[0] #remove '' from field and convert to int
+        parang = read_ms.parang_coverage(obs_vis, calfield)
+
+    if npol < 4:
+        logger.warning("Only {0} polarisations present in '{1}'. Any attempted polarisation calibration will fail, so setting dopol=False in [run] section of '{2}'.".format(npol,obs_vis,args.config))
+        dopol = False
+    elif 0 < parang < 30:
+        logger.warning("Parallactic angle coverage is < 30 deg. Polarisation calibration will most likely fail, so setting dopol=False in [run] section of '{0}'.".format(args.config))
+        dopol = False
+
+    read_ms.check_refant(obs_vis, refant, config, warn=True)
+
+    msmd.done()
+
+    print("Successfully opened and read ms")
+
+
+    ######## FLAG ROUND 1 ########
+
+
+
+
+
+
+
+
+
+    
+########## RUNNING OVERALL SCRIPT: NOTE: EXECFILE() DOES NOT ALLOW EXECUTED FILE TO BE MAIN PROCESS #######
+main()

@@ -6,13 +6,15 @@ import sys
 import os
 import numpy as np
 
+import processMeerKAT
 import config_parser
 
 from casatasks import *
 from casatools import msmetadata,table,measures,quanta
 
+logger = processMeerKAT.logger
 
-def get_fields(MS):
+def get_fields(msmd=None, config=None):
 
     """Extract field numbers from intent, including calibrators for bandpass, flux, phase & amplitude, and the target. Only the
     target allows for multiple field IDs, while all others extract the field with the most scans and put all other IDs as target fields.
@@ -40,7 +42,7 @@ def get_fields(MS):
 
     #Set default for any missing intent as field for intent CALIBRATE_FLUX
     fluxcal = msmd.fieldsforintent('CALIBRATE_FLUX')
-    if 'CALIBRATE_FLUX' not in intents or fluxcal.size == 0:
+    if ('CALIBRATE_FLUX' not in intents or fluxcal.size == 0) and config['fields']['fluxfield']=='':
         logger.error('You must have a field with intent "CALIBRATE_FLUX". I only found {0} in dataset "{1}".'.format(intents,MS))
         return fieldIDs
     else:
@@ -162,14 +164,68 @@ def check_refant(MS,refant,config,warn=True):
         ants = msmd.antennaids()
 
     if refant not in ants:
-        err = "Reference antenna '{0}' isn't present in input dataset '{1}'. Antennas present are: {2}. Try "'5e'" if present, or check observation directories.".format(refant,MS,ants,config)
+        err = "Reference antenna '{0}' isn't present in input dataset '{1}'. Antennas present are: {2}. Try 'm052' or 'm005' if present, or ensure 'calcrefant=True' and 'calc_refant.py' script present in '{3}'.".format(refant,MS,ants,config)
         if warn:
             logger.warning(err)
         else:
             raise ValueError(err)
     else:
         logger.info("Using reference antenna '{0}'.".format(refant))
+        if refant == 'm059':
+            logger.info("This is usually a well-behaved (stable) antenna. Edit '{0}' to change this, by updating 'refant' in [crosscal] section.".format(config))
+            logger.debug("Alternatively, set 'calcrefant=True' in [crosscal] section of '{0}', and include 'calc_refant.py' in 'scripts' in [slurm] section.".format(config)) #(included by default)
 
+def check_scans(MS,nodes,tasks,dopol):
+
+    """Check if the user has set the number of threads to a number larger than the number of scans.
+    If so, display a warning and return the number of thread to be replaced in their config file.
+
+    Arguments:
+    ----------
+    MS : str
+        Input MeasurementSet (relative or absolute path).
+    nodes : int
+        The number of nodes set by the user.
+    tasks : int
+        The number of tasks (per node) set by the user.
+    dopol : bool
+        Do polarisation calibration?
+
+    Returns:
+    --------
+    threads : dict
+        A dictionary with updated values for nodes and tasks per node to match the number of scans."""
+
+    nscans = msmd.nscans()
+    limit = int(nscans/2)
+
+    if abs(nodes * tasks - limit) > 0.1*limit:
+        logger.warning('The number of threads ({0} node(s) x {1} task(s) = {2}) is not ideal compared to the number of scans ({3}) for "{4}".'.format(nodes,tasks,nodes*tasks,nscans,MS))
+
+        #Start with 8/16 tasks on one node, and increase count of nodes (and then tasks per node) until limit reached
+        nodes = 1
+        tasks = 16 if not dopol else 8
+
+        if tasks > limit:
+            tasks = limit
+
+        while nodes * tasks < limit:
+            if nodes < processMeerKAT.TOTAL_NODES_LIMIT:
+                nodes += 1
+            elif tasks < processMeerKAT.NTASKS_PER_NODE_LIMIT:
+                tasks += 1
+            else:
+                break
+
+        logger.warning('Config file has been updated to use {0} node(s) and {1} task(s) per node.'.format(nodes,tasks))
+        if nodes*tasks != limit:
+            logger.info('For the best results, update your config file so that nodes x tasks per node = {0}.'.format(limit))
+
+    if nodes > 4:
+        logger.warning("Large allocation of {0} nodes found. Please consider setting 'createmms=False' in config file, if using large number of SPWs.".format(nodes))
+
+    threads = {'nodes' : nodes, 'ntasks_per_node' : tasks}
+    return threads
 
 def check_spw(config,msmd):
 
@@ -319,35 +375,3 @@ def get_xy_field(visname, fields):
         xyfield = fields.dpolfield
 
     return xyfield
-
-def main():
-
-    args = config_parser.parse_config()
-    logger = 
-    msmd.open(args.MS)
-
-    dopol = args.dopol
-    refant = config_parser.parse_config(args.config)[0]['crosscal']['refant']
-    fields = get_fields(args.MS)
-    logger.info('[fields] section written to "{0}". Edit this section if you need to change field IDs (comma-seperated string for multiple IDs, not supported for calibrators).'.format(args.config))
-
-    npol = msmd.ncorrforpol()[0]
-    parang = 0
-    if 'phasecalfield' in fields:
-        calfield = msmd.fieldsforname(fields['phasecalfield'][1:-1])[0] #remove '' from field and convert to int
-        parang = parang_coverage(args.MS, calfield)
-
-    if npol < 4:
-        logger.warning("Only {0} polarisations present in '{1}'. Any attempted polarisation calibration will fail, so setting dopol=False in [run] section of '{2}'.".format(npol,args.MS,args.config))
-        dopol = False
-    elif 0 < parang < 30:
-        logger.warning("Parallactic angle coverage is < 30 deg. Polarisation calibration will most likely fail, so setting dopol=False in [run] section of '{0}'.".format(args.config))
-        dopol = False
-
-    check_refant(args.MS, refant, args.config, warn=True)
-    SPW = check_spw(args.config,msmd)
-
-    msmd.done()
-
-if __name__ == "__main__":
-    main()
