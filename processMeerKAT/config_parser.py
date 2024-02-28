@@ -6,14 +6,14 @@
 import argparse
 import configparser
 import ast
-import processMeerKAT
+import pipelines.processMeerKAT.processATA as processATA
 
 def parse_args():
     """
     Parse the command line arguments
     """
     parser = argparse.ArgumentParser()
-    parser.add_argument('-C','--config', default=processMeerKAT.CONFIG, required=False, help='Name of the input config file')
+    parser.add_argument('-C','--config', default=processATA.CONFIG, required=False, help='Name of the input config file')
 
     args, __ = parser.parse_known_args()
 
@@ -78,10 +78,10 @@ def overwrite_config(filename, conf_dict={}, conf_sec='', sec_comment=''):
     config_dict,config = parse_config(filename)
 
     if conf_sec not in config.sections():
-        processMeerKAT.logger.debug('Writing [{0}] section in config file "{1}" with:\n{2}.'.format(conf_sec,filename,conf_dict))
+        processATA.logger.debug('Writing [{0}] section in config file "{1}" with:\n{2}.'.format(conf_sec,filename,conf_dict))
         config.add_section(conf_sec)
     else:
-        processMeerKAT.logger.debug('Overwritting [{0}] section in config file "{1}" with:\n{2}.'.format(conf_sec,filename,conf_dict))
+        processATA.logger.debug('Overwritting [{0}] section in config file "{1}" with:\n{2}.'.format(conf_sec,filename,conf_dict))
 
     if sec_comment != '':
         config.set(conf_sec, sec_comment)
@@ -103,7 +103,7 @@ def parse_spw(filename):
         SPWs = spw.split(',')
         low,high,unit,dirs = [0]*len(SPWs),[0]*len(SPWs),['']*len(SPWs),['']*len(SPWs)
         for i,SPW in enumerate(SPWs):
-            low[i],high[i],unit[i],func = processMeerKAT.get_spw_bounds(SPW)
+            low[i],high[i],unit[i],func = processATA.get_spw_bounds(SPW)
             dirs[i] = '{0}~{1}{2}'.format(low[i],high[i],unit[i])
 
         lowest = min(low)
@@ -115,7 +115,7 @@ def parse_spw(filename):
         #     dirs = '*{0}'.format(unit)
 
     else:
-        low,high,unit,func = processMeerKAT.get_spw_bounds(spw)
+        low,high,unit,func = processATA.get_spw_bounds(spw)
         dirs = []
 
     return low,high,unit,dirs

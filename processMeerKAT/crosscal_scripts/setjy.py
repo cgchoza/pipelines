@@ -85,17 +85,18 @@ def do_setjy(visname, spw, fields, standard, dopol=False, createmms=True):
             logger.info("Estimating polarization index and position angle of polarized emission from linear fit based on: Perley & Butler 2013 (https://ui.adsabs.harvard.edu/abs/2013ApJS..204...19P/abstract)")
             # central freq of spw
             spwMeanFreq = msmd.meanfreq(0, unit='GHz')
-            freqList = np.array([1.05, 1.45, 1.64, 1.95])
+            freqList = np.array([1.02, 1.47, 1.87, 2.57, 3.57, 4.89, 6.68, 8.43, 11.3])
+
             # fractional linear polarisation
-            fracPolList = [0.086, 0.095, 0.099, 0.101]
+            fracPolList = np.array([0.086, 0.098, 0.101, 0.106, 0.112, 0.115, 0.119, 0.121, 0.123])
             polindex = linfit(spwMeanFreq, freqList, fracPolList)
             logger.info("Predicted polindex at frequency %s: %s", spwMeanFreq, polindex)
             # position angle of polarized intensity
-            polPositionAngleList = [33, 33, 33, 33]
+            polPositionAngleList = np.array([33.0]*8 + [34.0])
             polangle = linfit(spwMeanFreq, freqList, polPositionAngleList)
             logger.info("Predicted pol angle at frequency %s: %s", spwMeanFreq, polangle)
 
-            reffreq = "1.45GHz"
+            reffreq = f"{spwMeanFreq}GHz"
             logger.info("Ref freq %s", reffreq)
             setjy(vis=visname,
                 field=id3C286,

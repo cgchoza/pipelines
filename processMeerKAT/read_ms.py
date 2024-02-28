@@ -6,13 +6,13 @@ import sys
 import os
 import numpy as np
 
-import processMeerKAT
+import pipelines.processMeerKAT.processATA as processATA
 import config_parser
 
 from casatasks import *
 from casatools import msmetadata,table,measures,quanta
 
-logger = processMeerKAT.logger
+logger = processATA.logger
 
 # Get access to the msmd module
 msmd = msmetadata()
@@ -216,9 +216,9 @@ def check_scans(MS,nodes,tasks,dopol):
             tasks = limit
 
         while nodes * tasks < limit:
-            if nodes < processMeerKAT.TOTAL_NODES_LIMIT:
+            if nodes < processATA.TOTAL_NODES_LIMIT:
                 nodes += 1
-            elif tasks < processMeerKAT.NTASKS_PER_NODE_LIMIT:
+            elif tasks < processATA.NTASKS_PER_NODE_LIMIT:
                 tasks += 1
             else:
                 break
@@ -384,8 +384,8 @@ def get_xy_field(visname, fields):
 
 def main():
 
-    args = processMeerKAT.parse_args()
-    processMeerKAT.setup_logger(args.config,args.verbose)
+    args = processATA.parse_args()
+    processATA.setup_logger(args.config,args.verbose)
     msmd.open(args.MS)
 
     dopol = args.dopol

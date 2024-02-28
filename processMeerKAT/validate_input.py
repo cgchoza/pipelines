@@ -5,7 +5,7 @@ import sys
 import os
 
 from config_parser import validate_args as va
-import processMeerKAT
+import pipelines.processMeerKAT.processATA as processATA
 import read_ms, bookkeeping
 
 from casatools import msmetadata
@@ -27,11 +27,11 @@ def main(args,taskvals):
     """
 
     cwd=os.getcwd()
-    os.chdir(processMeerKAT.SCRIPT_DIR)
+    os.chdir(processATA.SCRIPT_DIR)
     commit=os.popen('git log --format="%H" -n 1').read()
     os.chdir(cwd)
 
-    logger.info('This is version {0} of the pipeline - commit ID {1}'.format(processMeerKAT.__version__,commit))
+    logger.info('This is version {0} of the pipeline - commit ID {1}'.format(processATA.__version__,commit))
 
     visname = va(taskvals, 'data', 'vis', str)
     calcrefant = va(taskvals, 'crosscal', 'calcrefant', bool)

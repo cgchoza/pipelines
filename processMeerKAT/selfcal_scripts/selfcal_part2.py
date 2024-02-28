@@ -11,7 +11,7 @@ import numpy as np
 import config_parser
 from config_parser import validate_args as va
 import bookkeeping
-import processMeerKAT
+import pipelines.processMeerKAT.processATA as processATA
 
 from astropy.coordinates import SkyCoord
 from astropy.io import fits
@@ -154,7 +154,7 @@ def find_outliers(vis, refant, dopol, nloops, loop, cell, robust, imsize, wprojp
             #     RACS = vstack([galcut,galregion],join_type='exact')
             #     RACS.write(cat,overwrite=True)
             # except:
-            RACS = '{0}/RACS.fits.gz'.format(processMeerKAT.SCRIPT_DIR)
+            RACS = '{0}/RACS.fits.gz'.format(processATA.SCRIPT_DIR)
             tmp = fits.open(RACS)
             all_positions = SkyCoord(ra=tmp[1].data[racol],dec=tmp[1].data[deccol],unit='deg,deg')
             tmp[1].data = tmp[1].data[phasecenter.separation(all_positions) < Quantity(sky_model_radius,'deg')]

@@ -10,7 +10,7 @@ import os
 import config_parser
 from config_parser import validate_args as va
 import read_ms
-import processMeerKAT
+import pipelines.processMeerKAT.processATA as processATA
 import bookkeeping
 
 from casatasks import *
@@ -64,7 +64,7 @@ def main(args,taskvals):
 
     if not include_crosshand and npol == 4:
         npol = 2
-    CPUs = npol if tasks*npol <= processMeerKAT.CPUS_PER_NODE_LIMIT else 1 #hard-code for number of polarisations
+    CPUs = npol if tasks*npol <= processATA.CPUS_PER_NODE_LIMIT else 1 #hard-code for number of polarisations
 
     mvis = do_partition(visname, spw, preavg, CPUs, include_crosshand, createmms, spwname)
     mvis = "'{0}'".format(mvis)

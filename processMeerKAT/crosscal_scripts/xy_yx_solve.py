@@ -30,14 +30,14 @@ def qu_polfield(polfield, visname):
     """
 
     msmd.open(visname)
-    meanfreq = msmd.meanfreq(0, unit='MHz')
+    meanfreq = msmd.meanfreq(0, unit='GHz')
     msmd.done()
 
     if polfield in ["3C286", "1328+307", "1331+305", "J1331+3030"]:
         #f_coeff=[1.2515,-0.4605,-0.1715,0.0336]    # coefficients for model Stokes I spectrum from Perley and Butler 2013
-        perley_frac = np.array([0.086,0.095,0.099])
-        perley_f = np.array([1050,1450,1640])
-        pa_polcal = np.array([33.0,33.0,33.0])
+        perley_frac = np.array([0.086, 0.098, 0.101, 0.106, 0.112, 0.115, 0.119, 0.121, 0.123])
+        perley_f = np.array([1.02, 1.47, 1.87, 2.57, 3.57, 4.89, 6.68, 8.43, 11.3])
+        pa_polcal = np.array([33.0]*8 + [34.0])
     elif polfield in ["3C138", "0518+165", "0521+166", "J0521+1638"]:
         #f_coeff=[1.0332,-0.5608,-0.1197,0.041]    # coefficients for model Stokes I spectrum from Perley and Butler 2013
         perley_frac = np.array([0.056,0.075,0.084,0.09,0.104,0.107,0.10])
