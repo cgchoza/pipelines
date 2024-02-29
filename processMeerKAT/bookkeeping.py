@@ -56,7 +56,7 @@ def get_field_ids(fields):
     kcorrfield     = fields['phasecalfield'].strip("'")
     xdelfield      = fields['phasecalfield'].strip("'")
     dpolfield      = fields['phasecalfield'].strip("'")
-    xpolfield      = fields['phasecalfield'].strip("'")
+    xpolfield      = fields['polcalfield'].strip("'")
 
     if fluxfield != secondaryfield:
         gainfields = \
@@ -80,12 +80,12 @@ def polfield_name(visname):
     msmd.done()
 
     polfield = ''
-    if any([ff in ["3C286", "1328+307", "1331+305", "J1331+3030"] for ff in fieldnames]):
-        polfield= list(set(["3C286", "1328+307", "1331+305", "J1331+3030"]).intersection(set(fieldnames)))[0]
-    elif any([ff in ["3C138", "0518+165", "0521+166", "J0521+1638"] for ff in fieldnames]):
-        polfield = list(set(["3C138", "0518+165", "0521+166", "J0521+1638"]).intersection(set(fieldnames)))[0]
-    elif any([ff in ["3C48", "0134+329", "0137+331", "J0137+3309"] for ff in fieldnames]):
-        polfield = list(set(["3C48", "0134+329", "0137+331", "J0137+3309"]).intersection(set(fieldnames)))[0]
+    if any([ff in ["3c286", "1328+307", "1331+305", "J1331+3030"] for ff in fieldnames]):
+        polfield= list(set(["3c286", "1328+307", "1331+305", "J1331+3030"]).intersection(set(fieldnames)))[0]
+    elif any([ff in ["3c138", "0518+165", "0521+166", "J0521+1638"] for ff in fieldnames]):
+        polfield = list(set(["3c138", "0518+165", "0521+166", "J0521+1638"]).intersection(set(fieldnames)))[0]
+    elif any([ff in ["3c48", "0134+329", "0137+331", "J0137+3309"] for ff in fieldnames]):
+        polfield = list(set(["3c48", "0134+329", "0137+331", "J0137+3309"]).intersection(set(fieldnames)))[0]
     elif "J1130-1449" in fieldnames:
         polfield = "J1130-1449"
     else:

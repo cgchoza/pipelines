@@ -61,7 +61,7 @@ def do_parallel_cal(visname, fields, calfiles, referenceant, caldir,
                 listfile = os.path.join(caldir,'fluxscale_xx_yy.txt'))
         bookkeeping.check_file(calfiles.fluxfile)
 
-
+################### RUN IT DOWN HERE ###################
 
 taskvals,config = config_parser.parse_config(filename=CONFIG_PATH)
 visname = config['data']['vis'].strip("'")

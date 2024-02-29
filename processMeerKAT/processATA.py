@@ -285,19 +285,26 @@ if __name__ == "<run_path>":
     msmd.done()
 
     ############ FLAGGING ROUND 1 ############
-    # print("Flagging round 1")
+    # print("flag round 1")
     # execfile(filename='/home/cchoza/pipelines/processMeerKAT/crosscal_scripts/flag_round_1.py', globals=globals())
 
-    print("Setjy")
+    print("setjy")
     execfile(filename='/home/cchoza/pipelines/processMeerKAT/crosscal_scripts/setjy.py', globals=globals())
 
     print("xx_yy_solve")
     execfile(filename='/home/cchoza/pipelines/processMeerKAT/crosscal_scripts/xx_yy_solve.py', globals=globals())
 
     print("xx_yy_apply")
-    
+    execfile(filename='/home/cchoza/pipelines/processMeerKAT/crosscal_scripts/xx_yy_apply.py', globals=globals())
 
+    print("flag round 2")
+    execfile(filename='/home/cchoza/pipelines/processMeerKAT/crosscal_scripts/flag_round_2.py', globals=globals())
 
+    print("xy_yx_solve")
+    execfile(filename='/home/cchoza/pipelines/processMeerKAT/crosscal_scripts/xy_yx_solve.py', globals=globals())
+
+    print("xy_yx_apply")
+    execfile(filename='/home/cchoza/pipelines/processMeerKAT/crosscal_scripts/xy_yx_apply.py', globals=globals())
 
 
 

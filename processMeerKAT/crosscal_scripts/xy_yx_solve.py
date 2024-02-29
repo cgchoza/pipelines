@@ -7,13 +7,12 @@ import shutil
 
 import config_parser
 import bookkeeping
-from config_parser import validate_args as va
+from crosscal_scripts.config import CONFIG_PATH
 from casarecipes.almapolhelpers import xyamb
 import numpy as np
 
 from casatasks import *
 logfile=casalog.logfile()
-casalog.setlogfile('logs/{SLURM_JOB_NAME}-{SLURM_JOB_ID}.casa'.format(**os.environ))
 from casatools import msmetadata
 msmd = msmetadata()
 
@@ -33,7 +32,7 @@ def qu_polfield(polfield, visname):
     meanfreq = msmd.meanfreq(0, unit='GHz')
     msmd.done()
 
-    if polfield in ["3C286", "1328+307", "1331+305", "J1331+3030"]:
+    if polfield in ["3c286", "1328+307", "1331+305", "J1331+3030"]:
         #f_coeff=[1.2515,-0.4605,-0.1715,0.0336]    # coefficients for model Stokes I spectrum from Perley and Butler 2013
         perley_frac = np.array([0.086, 0.098, 0.101, 0.106, 0.112, 0.115, 0.119, 0.121, 0.123])
         perley_f = np.array([1.02, 1.47, 1.87, 2.57, 3.57, 4.89, 6.68, 8.43, 11.3])
@@ -81,6 +80,8 @@ def do_cross_cal(visname, fields, calfiles, referenceant, caldir,
         minbaselines, standard):
 
     polfield = bookkeeping.polfield_name(visname)
+    print(fields)
+    print(polfield)
     if polfield == '':
         polfield = fields.secondaryfield
     else:
@@ -128,6 +129,7 @@ def do_cross_cal(visname, fields, calfiles, referenceant, caldir,
             parang = False, append = False)
     bookkeeping.check_file(calfiles.gainfile)
 
+    print("The polfield is: ", polfield)
     if polfield != fields.secondaryfield:
         logger.info(" starting pol calibrator gain calibration\n -> %s" % calfiles.gainfile)
         gaincal(vis=visname, caltable = calfiles.gainfile,
@@ -143,6 +145,7 @@ def do_cross_cal(visname, fields, calfiles, referenceant, caldir,
     # Only run fluxscale if bootstrapping
     if len(fields.gainfields.split(',')) > 1:
         logger.info(" starting fluxscale -> %s", calfiles.fluxfile)
+        rmtables(os.path.join(caldir, calfiles.fluxfile))
         fluxscale(vis=visname, caltable=calfiles.gainfile,
                 reference=[fields.fluxfield], transfer='',
                 fluxtable=calfiles.fluxfile, append=False, display=False,
@@ -159,7 +162,7 @@ def do_cross_cal(visname, fields, calfiles, referenceant, caldir,
     gaincal(vis=visname, caltable = xyfile, field = polfield,
             refant = referenceant, solint = 'inf', combine = 'scan',
             gaintype = 'XYf+QU', minblperant = minbaselines,
-            preavg = 200.0,
+            preavg = 120.0,
             gaintable = [calfiles.bpassfile, calfiles.dpolfile, calfiles.gainfile],
             gainfield = [fields.bpassfield, fields.bpassfield, polfield],
             append = False)
@@ -174,19 +177,18 @@ def do_cross_cal(visname, fields, calfiles, referenceant, caldir,
     else:
         flagdata(vis=xyfile, datacolumn='CPARAM', mode='rflag', timedevscale=5.0, freqdevscale=5.0, action='apply')
 
-def main(args,taskvals):
+################### RUN IT DOWN HERE ###################
 
-    visname = va(taskvals, 'data', 'vis', str)
+taskvals,config = config_parser.parse_config(filename=CONFIG_PATH)
+visname = config['data']['vis'].strip("'")
 
-    calfiles, caldir = bookkeeping.bookkeeping(visname)
-    fields = bookkeeping.get_field_ids(taskvals['fields'])
+calfiles, caldir = bookkeeping.bookkeeping(visname)
+fields = bookkeeping.get_field_ids(config['fields'])
 
-    refant = va(taskvals, 'crosscal', 'refant', str, default='m005')
-    minbaselines = va(taskvals, 'crosscal', 'minbaselines', int, default=4)
-    standard = va(taskvals, 'crosscal', 'standard', str, default='Perley-Butler 2010')
+minbaselines = taskvals['crosscal']['minbaselines']
+standard = taskvals['crosscal']['standard']
+refant = taskvals['crosscal']['refant']
 
-    do_cross_cal(visname, fields, calfiles, refant, caldir, minbaselines, standard)
+do_cross_cal(visname, fields, calfiles, f"'{refant}'", caldir, minbaselines, standard)
 
-if __name__ == '__main__':
 
-    bookkeeping.run_script(main,logfile)

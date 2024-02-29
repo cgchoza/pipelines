@@ -5,15 +5,11 @@ import sys
 import os
 
 import config_parser
-from config_parser import validate_args as va
+from crosscal_scripts.config import CONFIG_PATH
 import bookkeeping
 
 from casatasks import *
 logfile=casalog.logfile()
-casalog.setlogfile('logs/{SLURM_JOB_NAME}-{SLURM_JOB_ID}.casa'.format(**os.environ))
-import casampi
-
-from flag_round_1 import CONFIG_PATH
 
 def do_pre_flag_2(visname, fields):
 
@@ -65,15 +61,12 @@ def do_pre_flag_2(visname, fields):
             extendflags=True, name=visname + 'summary.split', action="apply",
             flagbackup=True, overwrite=True, writeflags=True)
 
-def main(args,taskvals):
 
-    visname = va(taskvals, 'data', 'vis', str)
 
-    calfiles, caldir = bookkeeping.bookkeeping(visname)
-    fields = bookkeeping.get_field_ids(taskvals['fields'])
+taskvals,config = config_parser.parse_config(filename=CONFIG_PATH)
+visname = config['data']['vis'].strip("'")
 
-    do_pre_flag_2(visname, fields)
+calfiles, caldir = bookkeeping.bookkeeping(visname)
+fields = bookkeeping.get_field_ids(config['fields'])
 
-if __name__ == '__main__':
-
-    bookkeeping.run_script(main,logfile)
+do_pre_flag_2(visname, fields)

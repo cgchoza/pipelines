@@ -7,12 +7,10 @@ import shutil
 
 import config_parser
 import bookkeeping, read_ms
-from config_parser import validate_args as va
+from crosscal_scripts.config import CONFIG_PATH
 
 from casatasks import *
 logfile=casalog.logfile()
-casalog.setlogfile('logs/{SLURM_JOB_NAME}-{SLURM_JOB_ID}.casa'.format(**os.environ))
-import casampi
 
 import logging
 from time import gmtime
@@ -52,6 +50,7 @@ def do_cross_cal_apply(visname, fields, calfiles, caldir):
 
     if polfield != fields.secondaryfield:
         logger.info(" applying calibration: polarization calibrator")
+        print("This is the fluxfield: ", fluxfile, ", and this is the polfield: ", polfield)
         applycal(vis=visname, field=polfield,
                 selectdata=False, calwt=False, gaintable=[calfiles.bpassfile, fluxfile, calfiles.dpolfile,calfiles.xpolfile],
                 gainfield=[fields.bpassfield, polfield, fields.bpassfield, polfield],
@@ -65,15 +64,13 @@ def do_cross_cal_apply(visname, fields, calfiles, caldir):
             parang=True, interp='nearest,nearest,nearest,nearest')
 
 
-def main(args,taskvals):
+################### RUN IT DOWN HERE ###################
 
-    visname = va(taskvals, 'data', 'vis', str)
+taskvals,config = config_parser.parse_config(filename=CONFIG_PATH)
+visname = config['data']['vis'].strip("'")
 
-    calfiles, caldir = bookkeeping.bookkeeping(visname)
-    fields = bookkeeping.get_field_ids(taskvals['fields'])
+calfiles, caldir = bookkeeping.bookkeeping(visname)
+fields = bookkeeping.get_field_ids(config['fields'])
 
-    do_cross_cal_apply(visname, fields, calfiles, caldir)
+do_cross_cal_apply(visname, fields, calfiles, caldir)
 
-if __name__ == '__main__':
-
-    bookkeeping.run_script(main,logfile)

@@ -6,12 +6,10 @@ import os
 
 import config_parser
 import bookkeeping
-from config_parser import validate_args as va
+from crosscal_scripts.config import CONFIG_PATH
 
 from casatasks import *
 logfile=casalog.logfile()
-casalog.setlogfile('logs/{SLURM_JOB_NAME}-{SLURM_JOB_ID}.casa'.format(**os.environ))
-import casampi
 
 import logging
 from time import gmtime
@@ -36,18 +34,16 @@ def do_parallel_cal_apply(visname, fields, calfiles):
     applycal(vis=visname, field=field, selectdata=False, calwt=False, gaintable=[calfiles.kcorrfile, calfiles.bpassfile, fluxfile],
             gainfield=[fields.kcorrfield, fields.bpassfield, fields.secondaryfield], parang=False, interp='linear,linearflag')
 
-def main(args,taskvals):
+#################### RUN IT DOWN HERE ########################
 
-    visname = va(taskvals, 'data', 'vis', str)
+taskvals,config = config_parser.parse_config(filename=CONFIG_PATH)
+visname = config['data']['vis'].strip("'")
 
-    calfiles, caldir = bookkeeping.bookkeeping(visname)
-    fields = bookkeeping.get_field_ids(taskvals['fields'])
+calfiles, caldir = bookkeeping.bookkeeping(visname)
+fields = bookkeeping.get_field_ids(config['fields'])
 
-    refant = va(taskvals, 'crosscal', 'refant', str, default='m005')
-    minbaselines = va(taskvals, 'crosscal', 'minbaselines', int, default=4)
+minbaselines = taskvals['crosscal']['minbaselines']
+refant = taskvals['crosscal']['refant']
 
-    do_parallel_cal_apply(visname, fields, calfiles)
+do_parallel_cal_apply(visname, fields, calfiles)
 
-if __name__ == '__main__':
-
-    bookkeeping.run_script(main,logfile)
