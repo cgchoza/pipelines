@@ -13,9 +13,9 @@ logging.Formatter.converter = gmtime
 
 from casatasks import *
 logfile=casalog.logfile()
-casalog.setlogfile('logs/{SLURM_JOB_NAME}-{SLURM_JOB_ID}.casa'.format(**os.environ))
+
 from casatools import msmetadata
-import casampi
+
 msmd = msmetadata()
 
 logger = logging.getLogger(__name__)
@@ -154,23 +154,19 @@ def do_setjy(visname, spw, fields, standard, dopol=False):
     msmd.done()
 
 
-def main(args,taskvals):
 
-    if os.path.exists(os.path.join(os.getcwd(), "caltables")):
-        shutil.rmtree(os.path.join(os.getcwd(), "caltables"))
+if os.path.exists(os.path.join(os.getcwd(), "caltables")):
+    shutil.rmtree(os.path.join(os.getcwd(), "caltables"))
 
-    taskvals,config = config_parser.parse_config(filename=CONFIG_PATH)
-    visname = config['data']['vis'].strip("'")
+taskvals,config = config_parser.parse_config(filename=CONFIG_PATH)
+visname = config['data']['vis'].strip("'")
 
-    calfiles, caldir = bookkeeping.bookkeeping(visname)
-    fields = bookkeeping.get_field_ids(config['fields'])
+calfiles, caldir = bookkeeping.bookkeeping(visname)
+fields = bookkeeping.get_field_ids(config['fields'])
 
-    spw = config['crosscal']['spw'].split(" ")[0]
-    standard = config['crosscal']['standard'].split(" ")[0]
-    dopol = config["run"]["dopol"].split(" ")[0]
+spw = taskvals['crosscal']['spw']
+standard = taskvals['crosscal']['standard']
+dopol = config["run"]["dopol"].split(" ")[0]
 
-    do_setjy(visname, spw, fields, standard, dopol)
+do_setjy(visname, spw, fields, standard, dopol)
 
-if __name__ == '__main__':
-
-    bookkeeping.run_script(main,logfile)

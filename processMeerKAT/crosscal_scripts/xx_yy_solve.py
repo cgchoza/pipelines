@@ -10,6 +10,7 @@ import bookkeeping
 
 from casatasks import *
 logfile=casalog.logfile()
+from crosscal_scripts.config import CONFIG_PATH
 
 import logging
 from time import gmtime
@@ -60,19 +61,16 @@ def do_parallel_cal(visname, fields, calfiles, referenceant, caldir,
                 listfile = os.path.join(caldir,'fluxscale_xx_yy.txt'))
         bookkeeping.check_file(calfiles.fluxfile)
 
-def main(args,taskvals):
 
-    visname = va(taskvals, 'data', 'vis', str)
 
-    calfiles, caldir = bookkeeping.bookkeeping(visname)
-    fields = bookkeeping.get_field_ids(taskvals['fields'])
+taskvals,config = config_parser.parse_config(filename=CONFIG_PATH)
+visname = config['data']['vis'].strip("'")
 
-    minbaselines = va(taskvals, 'crosscal', 'minbaselines', int, default=4)
-    standard = va(taskvals, 'crosscal', 'standard', str, default='Stevens-Reynolds 2016')
-    refant = va(taskvals, 'crosscal', 'refant', str, default='m059')
+calfiles, caldir = bookkeeping.bookkeeping(visname)
+fields = bookkeeping.get_field_ids(config['fields'])
 
-    do_parallel_cal(visname, fields, calfiles, refant, caldir,minbaselines, standard)
+minbaselines = taskvals['crosscal']['minbaselines']
+standard = taskvals['crosscal']['standard']
+refant = taskvals['crosscal']['refant']
 
-if __name__ == '__main__':
-
-    bookkeeping.run_script(main,logfile)
+do_parallel_cal(visname, fields, calfiles, f"'{refant}'", caldir, minbaselines, standard)

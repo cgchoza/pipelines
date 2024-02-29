@@ -13,8 +13,6 @@ def do_pre_flag(visname, fields, badfreqranges, badants):
 
     clip = [0., 50.]
 
-    print(badfreqranges, type(badfreqranges), badfreqranges!='[]')
-
     if badfreqranges!='[]':
         badspw = '*:' + ',*:'.join(badfreqranges)
         flagdata(vis=visname, mode='manual', spw=badspw)

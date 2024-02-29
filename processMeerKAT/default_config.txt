@@ -52,7 +52,7 @@ spw = '0'                         # Spectral window / frequencies to extract for
 nspw = 11                         # Number of spectral windows to split into
 calcrefant = False                # Calculate reference antenna in program (overwrites 'refant')
 refant = '5e'                     # Reference antenna name / number
-standard = 'Stevens-Reynolds 2016'# Flux density standard for setjy
+standard = 'Perley-Butler 2017' # Flux density standard for setjy
 badants = ['1e', '1b']                      # List of bad antenna numbers (to flag)
 # List of bad frequency ranges (to flag) (not set up yet)
 badfreqranges = []
