@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-
 # Removing all SLURM arguments from this script! Will explore other necessary scripts and remove SLURM as needed
 # It might be better to turn this into a CASA recipe that execfiles('name', globals()) all the other relevant scripts
 # Look into this if it isn't budging in half an hour
@@ -34,11 +32,13 @@ sys.path.append('/home/cchoza/pipelines/processMeerKAT/')
 import config_parser
 import read_ms
 import bookkeeping
+
 from shutil import copyfile
 from copy import deepcopy
 import logging
 from time import gmtime
 from datetime import datetime
+from crosscal_scripts.config import CONFIG_PATH
 logging.Formatter.converter = gmtime
 logger = logging.getLogger(__name__)
 logging.basicConfig(format="%(asctime)-15s %(levelname)s: %(message)s")
@@ -60,7 +60,6 @@ LOG_DIR = 'logs'
 CALIB_SCRIPTS_DIR = 'crosscal_scripts'
 AUX_SCRIPTS_DIR = 'aux_scripts'
 SELFCAL_SCRIPTS_DIR = 'selfcal_scripts'
-CONFIG = 'default_config.txt'
 TMP_CONFIG = '.config.tmp'
 SPW_PREFIX = '*:'
 
@@ -241,14 +240,15 @@ def setup_logger(config,verbose=False):
     loglevel = logging.DEBUG if verbose else logging.INFO
     logger.setLevel(loglevel)
 
-def main():
+if __name__ == "<run_path>":
     # We're turning this into a run-engine instead
 
     sys.path.pop()
     ############ GET CONFIG FILE #############
     # Could turn into execfile('set_config.py', globals()) then execfile('config_parser.py', globals())
-    config = f'/home/cchoza/pipelines/processMeerKAT/default_config.txt'
-    taskvals,config = config_parser.parse_config(filename=config)
+    
+    # config_file = f'/home/cchoza/pipelines/processMeerKAT/default_config.txt'
+    taskvals,config = config_parser.parse_config(filename=CONFIG_PATH)
 
     print(taskvals, config)
 
@@ -258,35 +258,36 @@ def main():
     me = measures()
     qa = quanta()
 
-    obs_vis = config['data']['vis'].strip("'")
-    msmd.open(msfile=obs_vis)
+    visname = config['data']['vis'].strip("'")
+    msmd.open(msfile=visname)
 
     dopol = config['run']['dopol']
-    refant = config['crosscal']['refant']
-    fields = read_ms.get_fields(msmd, obs_vis)
+    refant = config['crosscal']['refant'].split()[0].strip("'")
+    fields = read_ms.get_fields(msmd, config)
+    print(fields)
     logger.info('[fields] section written to "{0}". Edit this section if you need to change field IDs (comma-seperated string for multiple IDs, not supported for calibrators).'.format(config))
 
     npol = msmd.ncorrforpol()[0]
     parang = 0
-    if 'phasecalfield' in fields:
-        calfield = msmd.fieldsforname(fields['phasecalfield'][1:-1])[0] #remove '' from field and convert to int
-        parang = read_ms.parang_coverage(obs_vis, calfield)
+    if 'polcalfield' in fields:
+        calfield = msmd.fieldsforname(fields['polcalfield'][1:-1])[0] #remove '' from field and convert to int
+        parang = read_ms.parang_coverage(visname, calfield, msmd=msmd)
 
     if npol < 4:
-        logger.warning("Only {0} polarisations present in '{1}'. Any attempted polarisation calibration will fail, so setting dopol=False in [run] section of '{2}'.".format(npol,obs_vis,args.config))
+        logger.warning("Only {0} polarisations present in '{1}'. Any attempted polarisation calibration will fail, so setting dopol=False in [run] section of '{2}'.".format(npol,visname,args.config))
         dopol = False
     elif 0 < parang < 30:
+        print("low parang calculated")
         logger.warning("Parallactic angle coverage is < 30 deg. Polarisation calibration will most likely fail, so setting dopol=False in [run] section of '{0}'.".format(args.config))
         dopol = False
 
-    read_ms.check_refant(obs_vis, refant, config, warn=True)
-
+    read_ms.check_refant(msmd=msmd, MS=visname, refant=refant, config=config, warn=True)
     msmd.done()
 
-    print("Successfully opened and read ms")
+    ############ FLAGGING ROUND 1 ############
+    print("Flagging round 1")
+    execfile(filename='/home/cchoza/pipelines/processMeerKAT/crosscal_scripts/flag_round_1.py', globals=globals())
 
-
-    ######## FLAG ROUND 1 ########
 
 
 
@@ -297,5 +298,5 @@ def main():
 
 
     
-########## RUNNING OVERALL SCRIPT: NOTE: EXECFILE() DOES NOT ALLOW EXECUTED FILE TO BE MAIN PROCESS #######
-main()
+# ########## RUNNING OVERALL SCRIPT: NOTE: EXECFILE() DOES NOT ALLOW EXECUTED FILE TO BE MAIN PROCESS #######
+# main()

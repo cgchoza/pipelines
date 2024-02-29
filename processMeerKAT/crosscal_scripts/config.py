@@ -1,0 +1,1 @@
+CONFIG_PATH = '/home/cchoza/pipelines/processMeerKAT/default_config.txt'

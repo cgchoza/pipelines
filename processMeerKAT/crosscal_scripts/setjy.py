@@ -4,7 +4,8 @@
 import os, sys, shutil
 
 import bookkeeping
-from config_parser import validate_args as va
+import config_parser
+from crosscal_scripts.config import CONFIG_PATH
 import numpy as np
 import logging
 from time import gmtime
@@ -29,12 +30,11 @@ def linfit(xInput, xDataList, yDataList):
     return yPredict
 
 
-def do_setjy(visname, spw, fields, standard, dopol=False, createmms=True):
+def do_setjy(visname, spw, fields, standard, dopol=False):
 
     delmod(vis=visname) #if this isn't called, setjy job completes but has exit code 1; clearcal(vis=visname) also works
 
     fluxlist = ["J0408-6545", "0408-6545", ""]
-    ismms = createmms
 
     msmd.open(visname)
     fnames = fields.fluxfield.split(",")
@@ -53,17 +53,18 @@ def do_setjy(visname, spw, fields, standard, dopol=False, createmms=True):
 
     if do_manual:
         smodel = [17.066, 0.0, 0.0, 0.0]
-        spix = [-1.179]
-        reffreq = "1284MHz"
+        spwMeanFreq = msmd.meanfreq(0, unit='GHz')
+        spix = [-1.179]    # check to see if this is a problem
+        reffreq = f"{spwMeanFreq}GHz"
 
         logger.info("Using manual flux density scale - ")
         logger.info("Flux model: %s ", smodel)
         logger.info("Spix: %s", spix)
         logger.info("Ref freq %s", reffreq)
 
-        setjy(vis=visname,field=setjyname,scalebychan=True,standard="manual",fluxdensity=smodel,spix=spix,reffreq=reffreq,ismms=ismms)
+        setjy(vis=visname,field=setjyname,scalebychan=True,standard="manual",fluxdensity=smodel,spix=spix,reffreq=reffreq)
     else:
-        setjy(vis=visname, field=setjyname, spw=spw, scalebychan=True, standard=standard,ismms=ismms)
+        setjy(vis=visname, field=setjyname, spw=spw, scalebychan=True, standard=standard)
 
     fieldnames = msmd.fieldnames()
 
@@ -107,7 +108,7 @@ def do_setjy(visname, spw, fields, standard, dopol=False, createmms=True):
                 reffreq=reffreq,
                 polindex=[polindex],
                 polangle=[polangle],
-                rotmeas=0,ismms=ismms)
+                rotmeas=0)
 
 
         # Check if 3C138 exists in the data
@@ -137,7 +138,7 @@ def do_setjy(visname, spw, fields, standard, dopol=False, createmms=True):
             polangle = linfit(spwMeanFreq, freqList, polPositionAngleList)
             logger.info("Predicted pol angle at frequency %s: %s", spwMeanFreq, polangle)
 
-            reffreq = "1.45GHz"
+            reffreq = f"{spwMeanFreq}GHz"
             logger.info("Ref freq %s", reffreq)
             setjy(vis=visname,
                 field=id3C138,
@@ -148,27 +149,27 @@ def do_setjy(visname, spw, fields, standard, dopol=False, createmms=True):
                 reffreq=reffreq,
                 polindex=[polindex],
                 polangle=[polangle],
-                rotmeas=0,ismms=ismms)
+                rotmeas=0)
 
     msmd.done()
 
 
 def main(args,taskvals):
 
-    visname = va(taskvals, "data", "vis", str)
-
     if os.path.exists(os.path.join(os.getcwd(), "caltables")):
         shutil.rmtree(os.path.join(os.getcwd(), "caltables"))
 
+    taskvals,config = config_parser.parse_config(filename=CONFIG_PATH)
+    visname = config['data']['vis'].strip("'")
+
     calfiles, caldir = bookkeeping.bookkeeping(visname)
-    fields = bookkeeping.get_field_ids(taskvals["fields"])
+    fields = bookkeeping.get_field_ids(config['fields'])
 
-    spw = va(taskvals, "crosscal", "spw", str, default="")
-    standard = va(taskvals, "crosscal", "standard", str, default="Stevens-Reynolds 2016")
-    dopol = va(taskvals, 'run', 'dopol', bool, default=False)
-    createmms = va(taskvals, 'crosscal', 'createmms', bool, default=True)
+    spw = config['crosscal']['spw'].split(" ")[0]
+    standard = config['crosscal']['standard'].split(" ")[0]
+    dopol = config["run"]["dopol"].split(" ")[0]
 
-    do_setjy(visname, spw, fields, standard, dopol, createmms)
+    do_setjy(visname, spw, fields, standard, dopol)
 
 if __name__ == '__main__':
 

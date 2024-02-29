@@ -48,15 +48,15 @@ def get_field_ids(fields):
     IDS from the MS and returns them as a list.
     """
 
-    targetfield    = fields['targetfields']
-    extrafields    = fields['extrafields']
-    fluxfield      = fields['fluxfield']
-    bpassfield     = fields['bpassfield']
-    secondaryfield = fields['phasecalfield']
-    kcorrfield     = fields['phasecalfield']
-    xdelfield      = fields['phasecalfield']
-    dpolfield      = fields['phasecalfield']
-    xpolfield      = fields['phasecalfield']
+    targetfield    = fields['targetfields'].strip("'")
+    extrafields    = fields['extrafields'].strip("'")
+    fluxfield      = fields['fluxfield'].strip("'")
+    bpassfield     = fields['bpassfield'].strip("'")
+    secondaryfield = fields['phasecalfield'].strip("'")
+    kcorrfield     = fields['phasecalfield'].strip("'")
+    xdelfield      = fields['phasecalfield'].strip("'")
+    dpolfield      = fields['phasecalfield'].strip("'")
+    xpolfield      = fields['phasecalfield'].strip("'")
 
     if fluxfield != secondaryfield:
         gainfields = \

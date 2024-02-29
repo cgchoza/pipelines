@@ -7,11 +7,9 @@ import shutil
 
 import config_parser
 import bookkeeping
-from config_parser import validate_args as va
 
 from casatasks import *
 logfile=casalog.logfile()
-casalog.setlogfile('logs/{SLURM_JOB_NAME}-{SLURM_JOB_ID}.casa'.format(**os.environ))
 
 import logging
 from time import gmtime

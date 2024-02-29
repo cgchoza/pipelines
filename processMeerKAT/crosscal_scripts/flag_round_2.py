@@ -13,6 +13,8 @@ logfile=casalog.logfile()
 casalog.setlogfile('logs/{SLURM_JOB_NAME}-{SLURM_JOB_ID}.casa'.format(**os.environ))
 import casampi
 
+from flag_round_1 import CONFIG_PATH
+
 def do_pre_flag_2(visname, fields):
 
     calfields = ','.join(set([i for i in (','.join([fields.gainfields] + [fields.extrafields]).split(',')) if i])) #remove duplicate and empty fields

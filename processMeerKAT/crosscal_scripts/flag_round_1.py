@@ -5,24 +5,22 @@ import sys
 import os
 
 import config_parser
-from config_parser import validate_args as va
 import bookkeeping
-
-from casatasks import *
-logfile=casalog.logfile()
-casalog.setlogfile('logs/{SLURM_JOB_NAME}-{SLURM_JOB_ID}.casa'.format(**os.environ))
-import casampi
+# sys.path.append('/home/cchoza/pipelines/processMeerKAT/')
+from crosscal_scripts.config import CONFIG_PATH
 
 def do_pre_flag(visname, fields, badfreqranges, badants):
 
     clip = [0., 50.]
 
-    if len(badfreqranges):
+    print(badfreqranges, type(badfreqranges), badfreqranges!='[]')
+
+    if badfreqranges!='[]':
         badspw = '*:' + ',*:'.join(badfreqranges)
         flagdata(vis=visname, mode='manual', spw=badspw)
 
-    if len(badants):
-        badants = ",".join([str(bb) for bb in badants])
+    if badants != '[]':
+        badants = badants.split("#")[0].strip(" ").strip("[").strip("]")
         flagdata(vis=visname, mode='manual', antenna=badants)
 
     flagdata(vis=visname, mode='manual', autocorr=True, action='apply',
@@ -35,7 +33,7 @@ def do_pre_flag(visname, fields, badfreqranges, badants):
             clipminmax=clip, datacolumn="DATA",clipoutside=True,
             clipzeros=True, extendpols=True, action="apply",flagbackup=True,
             savepars=False, overwrite=True, writeflags=True)
-
+    
     #tfcrop calfields and targetfield with different cutoffs / fits
     calfields = ','.join(set([i for i in (','.join([fields.gainfields] + [fields.extrafields]).split(',')) if i])) #remove duplicate and empty fields
 
@@ -61,18 +59,17 @@ def do_pre_flag(visname, fields, badfreqranges, badants):
     flagdata(vis=visname, mode='summary', datacolumn='DATA',
             name=visname+'.flag.summary')
 
-def main(args,taskvals):
 
-    visname = va(taskvals, 'data', 'vis', str)
 
-    badfreqranges = taskvals['crosscal'].pop('badfreqranges', ['935~947MHz', '1160~1310MHz', '1476~1611MHz', '1670~1700MHz'])
-    badants = taskvals['crosscal'].pop('badants')
+########### RUN IT DOWN HERE ##############
 
-    calfiles, caldir = bookkeeping.bookkeeping(visname)
-    fields = bookkeeping.get_field_ids(taskvals['fields'])
+taskvals,config = config_parser.parse_config(filename=CONFIG_PATH)
+visname = config['data']['vis'].strip("'")
 
-    do_pre_flag(visname, fields, badfreqranges, badants)
+calfiles, caldir = bookkeeping.bookkeeping(visname)
+fields = bookkeeping.get_field_ids(config['fields'])
 
-if __name__ == '__main__':
+badfreqranges = config['crosscal']['badfreqranges']
+badants = config['crosscal']['badants']
 
-    bookkeeping.run_script(main,logfile)
+do_pre_flag(visname, fields, badfreqranges, badants)
