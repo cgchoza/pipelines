@@ -297,6 +297,8 @@ if __name__ == "<run_path>":
     print("xx_yy_apply")
     execfile(filename='/home/cchoza/pipelines/processMeerKAT/crosscal_scripts/xx_yy_apply.py', globals=globals())
 
+    split(taskvals['data']['vis'], outputvis=f"{visname.split('.')[0]}_xx_yy_calibrated.ms", datacolumn='CORRECTED')
+
     print("flag round 2")
     execfile(filename='/home/cchoza/pipelines/processMeerKAT/crosscal_scripts/flag_round_2.py', globals=globals())
 

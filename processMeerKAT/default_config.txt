@@ -1,11 +1,11 @@
 [data]
-vis = 'standard_polcal_set_5.1GHz.ms'
+vis = 'standard_polcal_set_3GHz.ms'
 
 [fields]
 bpassfield = '3c147'
 fluxfield = '3c147'
 phasecalfield = '1330+251'
-targetfields = '1330+251'
+targetfields = '2350+646'
 extrafields = '1330+251'
 polcalfield = '3c286'
 

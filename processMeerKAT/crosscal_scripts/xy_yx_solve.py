@@ -42,7 +42,7 @@ def qu_polfield(polfield, visname):
         perley_frac = np.array([0.056,0.075,0.084,0.09,0.104,0.107,0.10])
         perley_f = np.array([1050,1450,1640,1950,2450,2950,3250])
         pa_polcal = np.array([-14.0,-11.0,-10.0,-10.0,-10.0,-10.0,-10.0])
-    elif polfield in ["3C48", "0134+329", "0137+331", "J0137+3309"]:
+    elif polfield in ["3c48", "0134+329", "0137+331", "J0137+3309"]:
         perley_frac = np.array([0.003, 0.005, 0.007])
         perley_f = np.array([1050,1450,1640])
         pa_polcal = np.array([25, 140, -5])
@@ -98,6 +98,7 @@ def do_cross_cal(visname, fields, calfiles, referenceant, caldir,
     xy0ambpfile = os.path.join(caldir, base+'.xyambcal')
     xy0pfile    = os.path.join(caldir, base+'.xycal')
     xpfile      = os.path.join(caldir, base+'.xfcal')
+    kcrossfile = os.path.join(caldir, base+'.Kcross0')
 
 
     logger.info(" starting bandpass -> %s" % calfiles.bpassfile)
@@ -151,6 +152,31 @@ def do_cross_cal(visname, fields, calfiles, referenceant, caldir,
                 fluxtable=calfiles.fluxfile, append=False, display=False,
                 listfile = os.path.join(caldir,'fluxscale_xy_yx.txt'))
         bookkeeping.check_file(calfiles.fluxfile)
+
+
+    # # Best scan to calibrate cross-hands will be where the polarization signal is 
+    # # # minimum in XX and YY (i.e., maximum in XY and YX); find the scan using the
+    # # # gain calibration for the phase/polarization calibrator
+    # # # This code taken from ALMA pipeline
+    # tb.open(calfiles.gainfile)
+    # scans = tb.getcol('SCAN_NUMBER')
+    # gains = np.squeeze(tb.getcol('CPARAM'))
+    # tb.close()
+    # scan_list = np.array(list(set(scans)))
+    # ratios = np.zeros(len(scan_list))
+    # for si, s in enumerate(scan_list):
+    #         filt = scans == s
+    #         ratio = np.sqrt(np.average(np.power(np.abs(gains[0,filt])/np.abs(gains[1,filt])-1.0,2.)))
+    #         ratios[si] = ratio
+
+    # best_scan_index = np.argmin(ratios)
+    # best_scan = scan_list[best_scan_index]
+    # print(f"Scan with highest expected X-Y signal: {best_scan}")
+
+    # # Kcross calibration
+    # gaincal(vis=visname, caltable=kcrossfile, refant=referenceant, solint='inf', gaintype='KCROSS', scan=str(best_scan), smodel=[1, 0, 1, 0], calmode='ap', 
+    #         minblperant=1, refantmode='strict', parang=True)
+        
 
     if polfield == fields.secondaryfield:
         # Cannot resolve XY ambiguity so write into final file directly

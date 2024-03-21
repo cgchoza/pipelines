@@ -34,6 +34,10 @@ def do_parallel_cal_apply(visname, fields, calfiles):
     applycal(vis=visname, field=field, selectdata=False, calwt=False, gaintable=[calfiles.kcorrfile, calfiles.bpassfile, fluxfile],
             gainfield=[fields.kcorrfield, fields.bpassfield, fields.secondaryfield], parang=False, interp='linear,linearflag')
 
+    if fields.xpolfield != '':
+        applycal(vis=visname, field=fields.xpolfield, selectdata=False, calwt=False, gaintable=[calfiles.kcorrfile, calfiles.bpassfile, fluxfile],
+            gainfield=[fields.kcorrfield, fields.bpassfield, fields.secondaryfield], parang=False, interp='linear,linearflag')
+
 #################### RUN IT DOWN HERE ########################
 
 taskvals,config = config_parser.parse_config(filename=CONFIG_PATH)
@@ -41,6 +45,7 @@ visname = config['data']['vis'].strip("'")
 
 calfiles, caldir = bookkeeping.bookkeeping(visname)
 fields = bookkeeping.get_field_ids(config['fields'])
+print(fields)
 
 minbaselines = taskvals['crosscal']['minbaselines']
 refant = taskvals['crosscal']['refant']
